@@ -302,6 +302,7 @@ func findAvailableAppointments(ctx context.Context, apptType AppointmentType, lo
 	state := appointmentFlowStateStart
 
 	for {
+		slog.Info("Doing something with appointments", slog.Any("state", state))
 		switch state {
 		case appointmentFlowStateStart:
 			slog.DebugContext(ctx, "Start state")
@@ -309,6 +310,7 @@ func findAvailableAppointments(ctx context.Context, apptType AppointmentType, lo
 			if _, err := chromedp.RunResponse(ctx, chromedp.Navigate(makeApptUrl)); err != nil {
 				return nil, err
 			}
+			slog.Info("Navigated to main page?")
 			state = appointmentFlowStateMainPage
 		case appointmentFlowStateMainPage:
 			slog.DebugContext(ctx, "Main page state")
@@ -320,7 +322,9 @@ func findAvailableAppointments(ctx context.Context, apptType AppointmentType, lo
 		case appointmentFlowStateAppointmentType:
 			slog.DebugContext(ctx, "Appointment type state")
 			// Click the appointment type button.
-			if _, err := chromedp.RunResponse(ctx, chromedp.Click(apptType.ToSelector(), chromedp.NodeVisible, chromedp.ByQuery)); err != nil {
+			if _, err := chromedp.RunResponse(ctx,
+				chromedp.Evaluate("let node = document.querySelector('#BlockLoader'); if(node){ node.parentNode.removeChild(node)}", nil),
+				chromedp.Click(apptType.ToSelector(), chromedp.ByQuery)); err != nil {
 				slog.DebugContext(ctx, "Failed to navigate to locations page", "err", err)
 				return nil, err
 			}
@@ -394,6 +398,7 @@ func (c Client) RunForLocations(ctx context.Context, apptType AppointmentType, l
 		ctx, cancel := chromedp.NewContext(ctx)
 		locationCtxs = append(locationCtxs, ctx)
 		locationCtxCancels = append(locationCtxCancels, cancel)
+		slog.Info("Created channel for location")
 	}
 
 	type locationResult struct {
@@ -408,6 +413,7 @@ func (c Client) RunForLocations(ctx context.Context, apptType AppointmentType, l
 	for i, location := range locations {
 		i, location := i, location
 		ctx, cancel := locationCtxs[i], locationCtxCancels[i]
+		slog.Info("Doing something with channel", slog.Any("Location", location))
 		go func() {
 			// Cancelling the context closes the tab for the given location.
 			defer cancel()

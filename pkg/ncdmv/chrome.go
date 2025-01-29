@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/chromedp/cdproto/browser"
 	"github.com/chromedp/chromedp"
 )
 
@@ -26,7 +27,9 @@ func NewChromeContext(ctx context.Context, headless, disableGpu, debug bool) (co
 	cancel := func() { cancel2(); cancel1() }
 
 	// Open the first (empty) tab.
-	if err := chromedp.Run(ctx); err != nil {
+	if err := chromedp.Run(ctx,
+		browser.GrantPermissions([]browser.PermissionType{browser.PermissionTypeGeolocation}),
+	); err != nil {
 		cancel()
 		return nil, nil, fmt.Errorf("failed to open first tab: %w", err)
 	}
